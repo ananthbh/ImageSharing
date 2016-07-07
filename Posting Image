@@ -1,0 +1,91 @@
+
+import UIKit
+import Parse
+
+class PostImageViewController: UIViewController, UINavigationControllerDelegate, UIImagePickerControllerDelegate {
+    
+    func displayalert(title: String,message: String) {
+        
+        var alert = UIAlertController(title: title, message: message, preferredStyle: UIAlertControllerStyle.Alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .Default, handler: { (action) in
+            self.dismissViewControllerAnimated(true, completion: nil)
+        }))
+        
+        
+        self.presentViewController(alert, animated: true, completion: nil)
+        
+    } // above code copied from viewcontroller to display alert.
+    
+    
+    
+    var activityindicator = UIActivityIndicatorView()
+    @IBOutlet var imageToPost: UIImageView!
+    
+    @IBAction func ChooseImage(sender: AnyObject) {
+        
+        var image = UIImagePickerController()
+        image.delegate = self
+        image.sourceType = UIImagePickerControllerSourceType.PhotoLibrary
+        image.allowsEditing = false
+        
+        self.presentViewController(image, animated: true, completion: nil)
+        
+    }
+    
+    func imagePickerController(picker: UIImagePickerController, didFinishPickingImage image: UIImage, editingInfo: [String : AnyObject]?) {
+        dismissViewControllerAnimated(true, completion: nil)
+        imageToPost.image = image
+    }
+    
+    @IBOutlet var message: UITextField!
+    
+    @IBAction func PostImage(sender: AnyObject) {
+        
+        activityindicator = UIActivityIndicatorView(frame: self.view.frame)
+        activityindicator.backgroundColor = UIColor(white: 1.0, alpha: 0.5)
+        activityindicator.center = self.view.center
+        activityindicator.hidesWhenStopped = true
+        activityindicator.activityIndicatorViewStyle = UIActivityIndicatorViewStyle.Gray
+        view.addSubview(activityindicator)
+        activityindicator.startAnimating()
+        
+        UIApplication.sharedApplication().beginIgnoringInteractionEvents()
+        
+        var post = PFObject(className: "Post")
+        post["message"] = message.text
+        post["userId"] = PFUser.currentUser()!.objectId!
+        let imageData = UIImagePNGRepresentation(imageToPost.image!)
+        let imagefile = PFFile(name: "image.png", data: imageData!)
+        post["Imagefile"] = imagefile
+        post.saveInBackgroundWithBlock { (success, error) in
+            self.activityindicator.stopAnimating()
+            UIApplication.sharedApplication().endIgnoringInteractionEvents()
+            if error == nil {
+                print("success")
+                
+                self.displayalert("Succesful",message: "Your Image is posted Succesfully")
+                self.imageToPost.image = UIImage(named: "Blank Image.png")
+                self.message.text = ""
+                
+                
+            } else {
+                self.displayalert("Not Succesful",message: "Your Image could not be posted Succesfully. Please Try Again")
+                
+            }
+        }
+    }
+    
+    
+    
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+
+        // Do any additional setup after loading the view.
+    }
+
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+        // Dispose of any resources that can be recreated.
+    }
+    
