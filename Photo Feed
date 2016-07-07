@@ -1,0 +1,103 @@
+import UIKit
+import Parse
+
+class FeedTableViewController: UITableViewController {
+    var messages = [String]()
+    var usernames = [String]()
+    var imagefiles = [PFFile]()
+    var users = [String: String]()
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        
+        var query = PFUser.query()
+        query?.findObjectsInBackgroundWithBlock({ (objects, error) in
+            if let users = objects {
+                
+                self.messages.removeAll(keepCapacity: true)         //copied from tableview controller to get usernames
+                self.users.removeAll(keepCapacity: true)
+                self.imagefiles.removeAll(keepCapacity: true)
+                self.usernames.removeAll(keepCapacity: true)
+                
+                for object in users {
+                    if let user = object as? PFUser{
+                        
+                        self.users[user.objectId!] = user.username!
+                        
+                    }
+                    
+                }
+            }
+
+        
+        var getFollowedUserQuery = PFQuery(className: "Followers")
+        getFollowedUserQuery.whereKey("Follower", equalTo: PFUser.currentUser()!.objectId!)
+        getFollowedUserQuery.findObjectsInBackgroundWithBlock { (objects, error) in
+            if let objects = objects {
+                for object in objects {
+                    var followeduser = object["Following"] as! String
+                    var query = PFQuery(className: "Post")
+                    query.whereKey("userId", equalTo: followeduser)
+                    query.findObjectsInBackgroundWithBlock({ (objects, error) in
+                        if let objects = objects {
+                            for object in objects {
+                                self.messages.append(object["message"] as! String)
+                                self.imagefiles.append(object["Imagefile"] as! PFFile)
+                                self.usernames.append(self.users[object["userId"] as! String]!)
+                                self.tableView.reloadData()
+                                
+                                
+                            }
+                            //print(self.users)
+                            //print(self.messages)
+                            
+                        }
+                    })
+                    
+                    
+                    
+                }
+                
+                
+            }
+        }
+        
+        })
+        
+    }
+
+    override func didReceiveMemoryWarning() {
+        super.didReceiveMemoryWarning()
+        // Dispose of any resources that can be recreated.
+    }
+
+    // MARK: - Table view data source
+
+    override func numberOfSectionsInTableView(tableView: UITableView) -> Int {
+        // #warning Incomplete implementation, return the number of sections
+        return 1
+    }
+
+    override func tableView(tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        // #warning Incomplete implementation, return the number of rows
+        return usernames.count
+    }
+
+    
+    override func tableView(tableView: UITableView, cellForRowAtIndexPath indexPath: NSIndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCellWithIdentifier("cell", forIndexPath: indexPath) as! Cell
+
+        imagefiles[indexPath.row].getDataInBackgroundWithBlock { (data, error) in
+            if let downloadedImage = UIImage(data: data!) {
+                cell.postedimage.image = downloadedImage
+            }
+        }
+        
+       //copied to above cell.postedimage.image = UIImage(named: "Blank Image.png")
+        cell.username.text = usernames[indexPath.row]
+        cell.message.text = messages[indexPath.row]
+        
+
+        return cell
+    }
+    
