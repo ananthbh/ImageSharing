@@ -1,0 +1,13 @@
+// this file contains basic layout and individual elements initilization code of the cell that has to be displayed in the feed.
+import UIKit
+
+class Cell: UITableViewCell {
+
+    @IBOutlet var username: UILabel!
+    
+    @IBOutlet var message: UILabel!
+    
+    @IBOutlet var postedimage: UIImageView!
+
+
+}
